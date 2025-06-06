@@ -1,0 +1,56 @@
+CREATE_EXP_DIR: True
+WORKERS: 0
+CUDA_VISIBLE_DEVICES: "1"
+DEVICE:
+  ACCELERATOR: "auto" # "auto" for auto device detection, "gpu" for cuda, "cpu" for cpu
+  DEVICES: 1 # number of GPUs to use. 0 for CPU
+  STRATEGY: null # default null - without distributed data parallel. "ddp" for distributed data parallel
+EXP_BASE_DIR: "../experiments/qrs_exp"
+#EXP_NAME: "resnet_avgpool_qrs_exp"
+EXP_NAME: "resnet_maxpool_downsample_qrs_exp"
+
+TRAIN_SET: QRS5MinDataset # dataset class name
+TEST_SET: QRS5MinDataset # dataset class name
+INPUT:
+  DATASET_KWARGS: # TimeSeriesDataSet arguments, note this passed as a dictionary to the model class, therefore the keys should match the TimeSeriesDataSet class __init__ arguments
+    dataset_root: /strg/D/shared-data/Shahaf_and_Fadi/vitaldb_ioh_dataset
+    qrs_root: /strg/D/shared-data/Shahaf_and_Fadi/vitaldb_ioh_dataset/neurokit2_processed
+    anns_file: anns_2min_window.json
+    maxpool_kernel: 10
+    signals: ['ECG_R_Peaks', 'ECG_R_Onsets', 'ECG_R_Offsets',
+              'ECG_P_Peaks', 'ECG_P_Onsets', 'ECG_P_Offsets',
+              'ECG_T_Peaks', 'ECG_T_Onsets', 'ECG_T_Offsets',
+              'ECG_Q_Peaks',  'ECG_S_Peaks']
+#    signals: ['ECG_R_Peaks',
+#              'ECG_P_Peaks',
+#              'ECG_T_Peaks',
+#              'ECG_Q_Peaks',
+#              'ECG_S_Peaks']
+
+
+WNB:
+  ENABLE: True
+
+MODEL:
+  NAME: AdjustableResNet
+  KWARGS:
+    input_channels: 11 # number of signals as input
+    layers_spec: [32-3-1-5, # (out_channels, kernel_size, stride, pool_size)
+                  64-3-1-5,
+                  64-3-1-5,
+                  128-3-1-5]
+    num_classes: 2
+    sequence_length: 3000
+    use_dropout: True
+    dropout_prob: 0.2
+    use_batchnorm: True
+
+OPT:
+    MAX_EPOCHS: 50
+    LR: 0.0005
+    BATCH_SIZE: 64
+    LOSS: cross_entropy
+
+
+#METRIC:
+#  VAL_METRICS: [Accuracy, F1Score, AUROC, Precision]

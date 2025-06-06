@@ -1,0 +1,46 @@
+CREATE_EXP_DIR: True
+WORKERS: 0
+CUDA_VISIBLE_DEVICES: "0" # "0" for cuda:0, "1" for cuda:1
+DEVICE:
+  ACCELERATOR: "auto" # "auto" for auto device detection, "gpu" for cuda, "cpu"
+  DEVICES: 1 # number of GPUs to use. 0 for CPU
+  STRATEGY: null # default null - without distributed data parallel. "ddp" for distributed data parallel
+EXP_BASE_DIR: "../experiments/tcn_resnet_exp"
+EXP_NAME: "tcn_resnet_with_att_exp"
+
+TRAIN_SET: IOH5MinDataset1D # dataset class name
+TEST_SET: IOH5MinDataset1D # dataset class name
+INPUT:
+  DATASET_KWARGS: # TimeSeriesDataSet arguments, note this passed as a dictionary to the model class, therefore the keys should match the TimeSeriesDataSet class __init__ arguments
+    dataset_root: /strg/E/shared-data/Shahaf_and_Fadi/vitaldb_ioh_dataset
+    anns_file: anns_2min_window.json # anns_2min_window_30_pos.json
+    signals: ["ECG_II"]
+    use_balancing: False
+    seq_len: 30000 # number of time steps in the input sequence, NOTE! this variable is mandatory for the model
+
+WNB:
+  ENABLE: True
+
+MODEL:
+  NAME: CustomTCN
+  KWARGS:
+    seq_len: 30000
+    use_embedding: True
+    num_tokens: 10
+    use_attention: True
+    attention_head_size: 4
+    output_size: 2
+    pooling: mean  # Options: last, max, mean
+    RESNET_ARGS:
+      embedding_size: 32
+    TCN_ARGS:
+      num_channels: [32, 64, 128]  # TCN layers: 3 levels of temporal convolutions
+      kernel_size: 2
+      dropout: 0.4
+
+OPT:
+  MAX_EPOCHS: 25
+  OPTIMIZER: AdamW  # options: Adam, AdamW, SGD
+  LR: 0.0005
+  BATCH_SIZE: 128
+  LOSS: cross_entropy

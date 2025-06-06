@@ -1,0 +1,17 @@
+--extra-index-url https://download.pytorch.org/whl/cu117
+torch==1.13.1+cu117
+torchvision==0.14.1+cu117
+torchaudio==0.13.1
+pytorch-forecasting==0.10.3
+lightning==1.9
+matplotlib
+tqdm
+wandb
+hydra-core
+omegaconf
+vitaldb
+PyWavelets
+pyemd
+EMD-signal
+neurokit2
+pecg

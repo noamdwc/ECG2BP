@@ -1,0 +1,8 @@
+# This is the IDE pycharm configuration file and should not be tracked
+.idea
+# This pattern name is for debug files and should not be tracked
+*DEBUG*
+*debug*
+# This is the config file for the WNB login credentials and should not be shared
+exp_configs/wnb_configs.yaml
+

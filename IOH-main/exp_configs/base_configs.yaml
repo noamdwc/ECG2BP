@@ -1,0 +1,39 @@
+VERSION: 0.4
+CUDA_VISIBLE_DEVICES: "" # "0" for cuda:0, "1" for cuda:1 etc.
+DEVICE:
+  ACCELERATOR: "auto" # "auto" for auto device detection, "gpu" for cuda, "cpu" for cpu
+  DEVICES: 1 # number of GPUs to use. 0 for CPU
+  STRATEGY: null # default null - without distributed data parallel. "ddp" for distributed data parallel
+WORKERS: 0 # number of workers for dataloader
+SEED: 42 # Non-zero value. for random training put an empty string
+
+EXP_BASE_DIR: "../experiments"
+EXP_NAME: "debug_exp" # experiment name - this is a dummy experiment for debugging should be overwritten
+CREATE_EXP_DIR: True
+
+TRAIN_SET: DebugDataset # dataset class name - this is a dummy dataset for debugging should be overwritten
+TEST_SET: DebugDataset # dataset class name - this is a dummy dataset for debugging should be overwritten
+
+MODEL:
+  WEIGHTS: "" # path to the initial weights .pth file. leave empty for random initialization
+EVAL:
+  TEST_BATCH_SIZE: 32 # batch size for evaluation. Recommended to be the largest that fits in memory, no backpropagation is done.
+  EVERY_N_EPOCH: 1 # evaluate frequency. default is after each epoch
+  METRICS: ""
+  VISUALIZE: ""
+WNB:
+  ENABLE: False # False to disable logging to wandb, good for debugging. Set to True for logging to wandb
+OPT:
+    MAX_EPOCHS: 100
+    OPTIMIZER: Adam
+    LR: 0.001
+    BATCH_SIZE: 2
+    LOSS: MSE
+CHECKPOINT:
+    TEST_CKP: "" # path to the checkpoint file to test. for testing this field should be filled with the path to the .ckpt file to test
+    FILENAME: "{epoch}-{val_loss:.2f}"
+    RESUME: null # path to the checkpoint file to resume training. default is null, no resuming. Note: this will override the WEIGHTS if not null
+    SAVE_TOP_K: 1
+    MONITOR: val_loss
+    MODE: min
+
