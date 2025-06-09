@@ -1,2 +1,5 @@
 .idea
 data_sample
+*.zip
+*.parquet
+*.csv
