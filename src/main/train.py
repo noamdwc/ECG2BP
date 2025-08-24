@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
-from .utils.augmentaions import ConditionalPairAugmenter, ECGAug, AnnealConfig
+from .utils.augmentaions import ECGAug, AnnealConfig, BatchAugmenter
 from .utils.constants import NP_PATH, BASE_PATH
 from .utils.datasets import SplitDataset
 from .utils.models import CNNLSTMModel
@@ -61,23 +61,23 @@ def main():
         optimizer, mode="max", factor=0.5, patience=3,
     )
 
-    # augmenter = BatchAugmenter(
-    #     use_mixup=True,  mixup_alpha=0.15, mixup_p=0.15, mixup_per_sample=True,
-    #     use_timecutmix=True, tcm_p=0.45, tcm_len_s=(0.25, 0.75), tcm_per_sample=True,
-    #     mutually_exclusive=True, fs=500, label_smoothing=0.05
-    # )
-
-    allowed_pairs = {(2, 3), (3, 2), (1, 3), (3, 1)}
-
-    augmenter = ConditionalPairAugmenter(
-        fs=500,
-        allowed_pairs=allowed_pairs,
-        use_mixup=True, mixup_alpha=0.3, mixup_p=0.35,
-        use_timecutmix=True, tcm_p=0.15, tcm_len_s=(0.20, 0.50),
-        tcm_per_sample=True, mixup_per_sample=True,
-        label_smoothing=0.03,
-        mutually_exclusive=True
+    augmenter = BatchAugmenter(
+        use_mixup=True, mixup_alpha=0.15, mixup_p=0.15, mixup_per_sample=True,
+        use_timecutmix=True, tcm_p=0.45, tcm_len_s=(0.25, 0.75), tcm_per_sample=True,
+        mutually_exclusive=True, fs=500, label_smoothing=0.05
     )
+
+    # allowed_pairs = {(2, 3), (3, 2), (1, 3), (3, 1)}
+    #
+    # augmenter = ConditionalPairAugmenter(
+    #     fs=500,
+    #     allowed_pairs=allowed_pairs,
+    #     use_mixup=True, mixup_alpha=0.3, mixup_p=0.35,
+    #     use_timecutmix=True, tcm_p=0.15, tcm_len_s=(0.20, 0.50),
+    #     tcm_per_sample=True, mixup_per_sample=True,
+    #     label_smoothing=0.03,
+    #     mutually_exclusive=True
+    # )
 
     per_sample_aug = ECGAug(
         fs=500,
