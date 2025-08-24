@@ -1,18 +1,20 @@
+import os
+
 import numpy as np
 
 TIME_COL = 'Time'
 ECG_SIGNAL_COL = 'ECG_II'
 ART_SIGNAL_COL = 'ART_MBP'
 BINNED_ART_COL = 'binned_art'
-BASE_PATH = 'drive/MyDrive/data/ecg2bg'
-DATA_PATH = 'drive/MyDrive/data/ecg2bg/vitlab_data'
+BASE_PATH = os.environ.get('VITLAB_DATA_PATH', 'drive/MyDrive/data/ecg2bg')
+DATA_PATH = f'{BASE_PATH}/vitlab_data'
 BINNED_PATH = f'{DATA_PATH}/art_binned'
 MERGED_PATH = f'{DATA_PATH}/merged'
 NP_PATH = f'{DATA_PATH}/np'
 WINDOWED_300_OFFSET_PT_PATH = f'{DATA_PATH}/windowed_300_offset'
 NPZ_FORMAT_PATH = f'{DATA_PATH}/npz_format'
-H5_FORMAT_PATH = 'drive/MyDrive/data/ecg2bg/early_dataset_segments3.h5'
-caseid_to_idx_path = 'drive/MyDrive/data/ecg2bg/caseid_to_early_idx3.json'
+H5_FORMAT_PATH = f'{BASE_PATH}/early_dataset_segments3.h5'
+caseid_to_idx_path = f'{BASE_PATH}/caseid_to_early_idx3.json'
 
 SAMPLING_RATE = 500  # Htz
 SECONDS_TO_SAMPLE = 1 / SAMPLING_RATE  # 0.002

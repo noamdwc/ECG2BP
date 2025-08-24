@@ -122,8 +122,8 @@ def main():
         watch_gradients=True,
         resume="allow",
         config_extra={
-            "lr": 1e-5,
-            "weight_decay": 1e-4,
+            "lr": 1e-4,
+            "weight_decay": 1e-3,
             "scheduler": "ReduceLROnPlateau(min, factor=0.5, patience=3)",
             "criterion": "CrossEntropyLoss",
             "architecture": "CNNLSTMModel",
