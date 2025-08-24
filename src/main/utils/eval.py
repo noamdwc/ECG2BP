@@ -1,6 +1,10 @@
-import wandb
 import torch
-from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, f1_score
+import wandb
+from sklearn.metrics import confusion_matrix, f1_score
+from torch import amp
+from tqdm import tqdm
+
+
 def log_confmat_to_wandb(y_true_np, y_pred_np, class_names):
     cm = confusion_matrix(y_true_np, y_pred_np, labels=list(range(len(class_names))))
     wandb.log({
@@ -12,6 +16,7 @@ def log_confmat_to_wandb(y_true_np, y_pred_np, class_names):
         )
     })
     return cm
+
 
 def accuracy_per_class(preds, labels, num_classes):
     from collections import defaultdict
@@ -35,7 +40,6 @@ def accuracy_per_class(preds, labels, num_classes):
     return acc_dict, total
 
 
-from contextlib import nullcontext
 @torch.no_grad()
 def evaluate_model(model, val_loader, num_classes, device, criterion):
     model.eval()
@@ -55,12 +59,12 @@ def evaluate_model(model, val_loader, num_classes, device, criterion):
         labels = torch.where(labels < 3, 1, 0)
         labels = labels.to(device, non_blocking=True)
         with amp.autocast('cuda', dtype=torch.float16):
-          logits = model(signals)  # (B, T, num_classes)
-          if num_classes == 1:
-              loss = criterion(logits.view(-1).float(), labels.view(-1).float())
-          else:
-              loss = criterion(logits.view(-1, logits.shape[-1]), labels.view(-1))
-          total_loss += loss.item()
+            logits = model(signals)  # (B, T, num_classes)
+            if num_classes == 1:
+                loss = criterion(logits.view(-1).float(), labels.view(-1).float())
+            else:
+                loss = criterion(logits.view(-1, logits.shape[-1]), labels.view(-1))
+            total_loss += loss.item()
 
         if num_classes == 1:
             probs = torch.sigmoid(logits)
@@ -84,13 +88,14 @@ def evaluate_model(model, val_loader, num_classes, device, criterion):
 
 
 @torch.no_grad()
-def plot_confusion_matrix(model, dataloader, device, num_classes, label_names=None, normalize='true', return_probs=False):
+def plot_confusion_matrix(model, dataloader, device, num_classes, label_names=None, normalize='true',
+                          return_probs=False):
     # (left as-is except we now actually return preds/labels; cm handled by helper above)
     model.eval()
     all_preds = []
     all_labels = []
     all_probs = []
-    all_sub_labels =[]
+    all_sub_labels = []
 
     for signals, labels in tqdm(dataloader, desc='cm stage', leave=False):
         signals = signals.to(device)
