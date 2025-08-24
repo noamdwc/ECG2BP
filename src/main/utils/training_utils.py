@@ -9,7 +9,7 @@ from tqdm import tqdm
 
 from .augmentaions import BatchAugmenter, ConditionalPairAugmenter, AnnealConfig, _apply_anneal, _capture_aug_bases, \
     _phase
-from .ema import EMA, _save_with_ema
+from .ema import EMA, save_with_ema
 from .eval import evaluate_model
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -249,7 +249,7 @@ def train_model(
         # Checkpoint (latest)
         latest_path = os.path.join(save_dir, f"latest_{model_name}.pt")
         if is_ema:
-            _save_with_ema(model, latest_path, ema)
+            save_with_ema(model, latest_path, ema)
         else:
             torch.save(model.state_dict(), latest_path)
 
@@ -260,7 +260,7 @@ def train_model(
             best_model_state = deepcopy(model.state_dict())
             best_path = os.path.join(save_dir, f"best_{model_name}.pt")
             if is_ema:
-                _save_with_ema(model, best_path, ema)
+                save_with_ema(model, best_path, ema)
             else:
                 torch.save(model.state_dict(), best_path)
             no_improve_epochs = 0
