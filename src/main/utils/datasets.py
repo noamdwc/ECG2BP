@@ -1,16 +1,19 @@
 import numpy as np
 import torch
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import Dataset
+
 
 # A dataset after segmenting and resampling
 class SplitDataset(Dataset):
-    def __init__(self, segments_paths, labels_path):
+    def __init__(self, segments_paths, labels_path, aug=None, fourier_transform=None):
         self.labels = np.load(labels_path)
         self.paths = segments_paths
-        self.parts = None        # opened lazily in each worker
+        self.parts = None  # opened lazily in each worker
         self.lens = None
         self.cumsum = None
         self.total = None
+        self.aug = aug
+        self.fourier_transform = fourier_transform
 
     def _ensure_open(self):
         if self.parts is None:
@@ -32,4 +35,12 @@ class SplitDataset(Dataset):
         seg = self.parts[part_idx][local_idx]
         x = torch.tensor(seg, dtype=torch.float32)
         y = torch.as_tensor(self.labels[idx], dtype=torch.long)
+
+        if self.aug is not None:
+            with torch.no_grad():
+                x = self.aug(x).contiguous()
+
+        if self.fourier_transform is not None:
+            x = self.fourier_transform(x)
+
         return x, y

@@ -1,6 +1,7 @@
 import json
 import os
 import random
+import warnings
 
 import numpy as np
 import torch
@@ -12,6 +13,7 @@ from .utils.constants import NP_PATH, BASE_PATH
 from .utils.datasets import SplitDataset
 from .utils.models import CNNLSTMModel
 from .utils.training_utils import train_model
+from .utils.transformations import WaveletDWTTransform, FFTFrontend
 
 # Speedups
 torch.backends.cudnn.benchmark = True  # fixed-size convs get autotuned
@@ -25,17 +27,56 @@ def seed_worker(worker_id):
     np.random.seed(seed)
 
 
-MODEL_NAME = "CNNLSTM_NP_T16_H90s_binary_pair_qugmenter--test--test"
+MODEL_NAME = "CNNLSTM_NP_T16_H90s_binary_wavelet_transform"
+
+TRANSFORM = "wavelet_transform"
 
 
 def main():
+    per_sample_aug = ECGAug(
+        fs=500,
+        p_jitter=0.55, sigma_rel=(0.010, 0.090),  # ~1.3× your p90
+        p_gain=0.55, gain_range=(0.93, 1.07),
+        p_shift=0.50, max_shift_ms=10,  # keep micro-events aligned
+        p_mask=0.30, n_masks=(0, 2), mask_ms=(10, 60),
+        p_wander=0.40, wander_hz=(0.05, 0.5), wander_amp_rel=(0.035, 0.180),
+        p_hum=0.0
+    )
+
+    if TRANSFORM == "fourier_transform":
+        transform = FFTFrontend(
+            fs=500.0,
+            fmin=0.0,
+            fmax=100.0,
+            n_bins=1024,
+            log_power=True,
+            remove_dc=True,
+            notch_hz=[50.0, 60.0],
+            notch_bw=1.0,
+            normalize=None,
+        )
+    elif TRANSFORM == "wavelet_transform":
+        transform = WaveletDWTTransform(
+            fs=500.0, wavelet="db4", level=6,
+            include_approx=False, log_power=True, normalize=False
+        )
+    elif TRANSFORM is None:
+        transform = None
+        warnings.warn("No input transformation is used!")
+    else:
+        raise ValueError(f"Unknown TRANSFORM {TRANSFORM}")
+
     train_ds = SplitDataset(["train_segments_part1.npy",
                              "train_segments_part2.npy"],
-                            "train_labels.npy")
+                            "train_labels.npy",
+                            aug=per_sample_aug,
+                            fourier_transform=transform)
     test_ds = SplitDataset(["test_segments_part1.npy",
                             "test_segments_part2.npy",
                             os.path.join(NP_PATH, "test_segments_part3.npy")],
-                           "test_labels.npy")
+                           "test_labels.npy",
+                           aug=None,
+                           fourier_transform=transform)
 
     load_kwargs = {"num_workers": 2, "pin_memory": True, "worker_init_fn": seed_worker}
     train_loader = DataLoader(
@@ -79,16 +120,6 @@ def main():
     #     mutually_exclusive=True
     # )
 
-    per_sample_aug = ECGAug(
-        fs=500,
-        p_jitter=0.55, sigma_rel=(0.010, 0.090),  # ~1.3× your p90
-        p_gain=0.55, gain_range=(0.93, 1.07),
-        p_shift=0.50, max_shift_ms=10,  # keep micro-events aligned
-        p_mask=0.30, n_masks=(0, 2), mask_ms=(10, 60),
-        p_wander=0.40, wander_hz=(0.05, 0.5), wander_amp_rel=(0.035, 0.180),
-        p_hum=0.0
-    )
-
     anneal = AnnealConfig(
         ps_strength_scale=0.6,  # ECGAug strength
         ps_prob_scale=0.7,  # ECGAug probs
@@ -118,7 +149,6 @@ def main():
         run_name=MODEL_NAME,  # keep run name same as checkpoint name
         entity=None,  # or your W&B team/user
         class_names=["0", "1"],  # binary after your label fold
-        log_cm_every=1,  # log CM each epoch
         watch_gradients=True,
         resume="allow",
         config_extra={
@@ -134,7 +164,6 @@ def main():
             "seq_hypers": {"T": 16, "win_sec": 90},
         },
         augmenter=augmenter,
-        per_sample_aug=per_sample_aug,
         anneal=anneal,
         sample_weight=False,
         eval_every=2

@@ -128,12 +128,10 @@ def train_model(
         run_name=None,
         entity=None,
         class_names=None,
-        log_cm_every=1,
         watch_gradients=True,
         resume="allow",
         config_extra=None,
         augmenter=None,
-        per_sample_aug=None,
         anneal: AnnealConfig = None,
         sample_weight=False,
         is_ema=False,
@@ -143,6 +141,8 @@ def train_model(
 
     if class_names is None:
         class_names = [str(i) for i in range(max(2, num_classes))]
+
+    per_sample_aug = getattr(train_loader.dataset, "aug", None)
 
     # init wandb
     base_cfg = {"epochs": num_epochs, "num_classes": num_classes,
@@ -181,10 +181,10 @@ def train_model(
                 labels = torch.where(labels < 3, 1, 0).long().to(device, non_blocking=True)
                 signals = signals.to(device, non_blocking=True)
 
-                if per_sample_aug is not None:
-                    with torch.no_grad():
-                        signals = torch.stack([per_sample_aug(s) for s in signals], dim=0)
-                        signals = signals.contiguous()
+                # if per_sample_aug is not None:
+                #   with torch.no_grad():
+                #     signals = torch.stack([per_sample_aug(s) for s in signals], dim=0)
+                #     signals = signals.contiguous()
 
                 optimizer.zero_grad(set_to_none=True)
                 with amp.autocast('cuda', dtype=torch.float16):
