@@ -2,6 +2,7 @@ import os
 import warnings
 from copy import deepcopy
 
+import optuna
 import torch
 import wandb
 from torch import amp
@@ -136,6 +137,7 @@ def train_model(
         sample_weight=False,
         is_ema=False,
         eval_every=1,
+        trial=None  # For optuna
 ):
     os.makedirs(save_dir, exist_ok=True)
 
@@ -229,6 +231,12 @@ def train_model(
         )
         if is_ema:
             ema.restore(model)
+
+        # If in optuna search, update trial and check for prune
+        if trial is not None:
+            trial.report(val_macro_f1, step=epoch)
+            if trial.should_prune():
+                raise optuna.TrialPruned()
         val_accuracies.append(val_macro_f1)
         val_per_class_history.append(val_per_class)
         val_loss_history.append(val_loss)

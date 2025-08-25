@@ -74,10 +74,10 @@ class ResNet1DEncoder(nn.Module):
 
 
 class CNNLSTMModel(nn.Module):
-    def __init__(self, cnn_out_dim=128, lstm_hidden=128, num_classes=6, num_blocks=(2, 2, 2)):
+    def __init__(self, cnn_out_dim=128, lstm_hidden=128, num_classes=6, num_blocks=(2, 2, 2), lstm_dropout=0.3):
         super().__init__()
         self.cnn = ResNet1DEncoder(in_channels=1, out_dim=cnn_out_dim, num_blocks=num_blocks)
-        self.lstm = nn.LSTM(input_size=cnn_out_dim, hidden_size=lstm_hidden, dropout=0.3,
+        self.lstm = nn.LSTM(input_size=cnn_out_dim, hidden_size=lstm_hidden, dropout=lstm_dropout,
                             batch_first=True, bidirectional=False)
         self.classifier = nn.Linear(lstm_hidden, num_classes)
 
