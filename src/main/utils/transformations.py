@@ -1,8 +1,8 @@
 import numpy as np
+import pywt
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import pywt
 
 
 class FFTFrontend(nn.Module):
@@ -15,6 +15,7 @@ class FFTFrontend(nn.Module):
     - optional z-score per (sample, frame)
     - optional fixed-length interpolation to n_bins to stabilize input length
     """
+
     def __init__(self,
                  fs: float = 500.0,
                  fmin: float = 0.0,
@@ -23,7 +24,7 @@ class FFTFrontend(nn.Module):
                  log_power: bool = True,
                  remove_dc: bool = True,
                  notch_hz: list[float] | None = (50.0, 60.0),
-                 notch_bw: float = 1.0,   # ±bw around each notch_hz
+                 notch_bw: float = 1.0,  # ±bw around each notch_hz
                  normalize: str | None = "zscore",  # "zscore" | None
                  eps: float = 1e-8):
         super().__init__()
@@ -45,7 +46,7 @@ class FFTFrontend(nn.Module):
         returns: (B, T, F) or (B, F) float
         """
         if x.dim() == 2:
-            x = x.unsqueeze(1)   # -> (B, 1, L)
+            x = x.unsqueeze(1)  # -> (B, 1, L)
             squeeze_back = True
         else:
             squeeze_back = False
@@ -64,8 +65,8 @@ class FFTFrontend(nn.Module):
             for h in self.notch_hz:
                 mask &= ~((freqs >= (h - self.notch_bw)) & (freqs <= (h + self.notch_bw)))
 
-        X = X[..., mask]                     # (B, T, F_sel)
-        spec = (X.real**2 + X.imag**2)       # power
+        X = X[..., mask]  # (B, T, F_sel)
+        spec = (X.real ** 2 + X.imag ** 2)  # power
         if self.log_power:
             spec = torch.log1p(spec)
 
@@ -89,7 +90,7 @@ class FFTFrontend(nn.Module):
         return spec
 
 
-class WaveletDWTTransform:
+class WaveletDWTTransform(nn.Module):
     """
     x: (T, L) torch.FloatTensor  ->  (T, n_feats) torch.FloatTensor
     Per-frame multilevel DWT using 'wavelet' (e.g., 'db4'), outputs log-power per level.
@@ -97,6 +98,7 @@ class WaveletDWTTransform:
 
     def __init__(self, fs=500.0, wavelet="db4", level=None,
                  include_approx=False, log_power=True, normalize="zscore", eps=1e-8):
+        super().__init__()
         self.fs = float(fs)
         self.wavelet = wavelet
         self.level = level  # None -> pywt.dwt_max_level
@@ -126,7 +128,7 @@ class WaveletDWTTransform:
         return feats
 
     @torch.no_grad()
-    def __call__(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         # x: (T, L) torch
         T, L = x.shape
         feats = []
