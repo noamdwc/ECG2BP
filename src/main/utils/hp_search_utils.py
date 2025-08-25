@@ -12,7 +12,7 @@ from .training_utils import train_model
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def build_optimizer(model, opt_kind, lr, wd, momentum=None, betas=(0.9, 0.999)):
+def _build_optimizer(model, opt_kind, lr, wd, momentum=None, betas=(0.9, 0.999)):
     if opt_kind == "adamw":
         return torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=wd, betas=betas)
     elif opt_kind == "adam":
@@ -81,7 +81,7 @@ def objective(trial: optuna.Trial):
     )
 
     # ---------- Loaders @ this fidelity ----------
-    train_loader, val_loader = ... # TODO: build make_loaders with train-val split
+    train_loader, val_loader = ...  # TODO: build make_loaders with train-val split
     # make_loaders(
     #     train_segments_paths, train_labels_path,
     #     val_segments_paths, val_labels_path,
@@ -95,7 +95,7 @@ def objective(trial: optuna.Trial):
         num_classes=2, num_blocks=num_blocks, lstm_dropout=lstm_dropout
     ).to(device)
 
-    optimizer = build_optimizer(model, opt_kind, lr, wd, momentum)
+    optimizer = _build_optimizer(model, opt_kind, lr, wd, momentum)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="max", factor=0.5, patience=3)
 
     # Don’t spam W&B during search; flip on only in final retrains
@@ -107,8 +107,8 @@ def objective(trial: optuna.Trial):
         model_name=f"hp_trial_{trial.number}",
         scheduler=scheduler, scheduler_mode="max",
         use_wandb=False,  # keep off for HPO
-        augmenter=augmenter, per_sample_aug=per_sample_aug,
-        anneal=None, sample_weight=False, is_ema=use_ema,
+        augmenter=augmenter, anneal=None,
+        sample_weight=False, is_ema=use_ema,
         eval_every=1, trial=trial
     )
 
