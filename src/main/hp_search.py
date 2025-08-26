@@ -28,3 +28,7 @@ def main():
     best = study.best_trial
     print("Best value:", best.value)
     print("Best params:", best.params)
+
+
+if __name__ == '__main__':
+    main()
